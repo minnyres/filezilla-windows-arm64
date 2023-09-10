@@ -1,0 +1,21 @@
+diff --git a/ports/libgnutls/portfile.cmake b/ports/libgnutls/portfile.cmake
+index 784a81303..a05a3578a 100644
+--- a/ports/libgnutls/portfile.cmake
++++ b/ports/libgnutls/portfile.cmake
+@@ -33,6 +33,8 @@ if(VCPKG_TARGET_IS_OSX)
+ endif()
+ 
+ set(ENV{GTKDOCIZE} true) # true, the program
++set(ENV{CFLAGS} " -D_POSIX_C_SOURCE -Wno-int-conversion")
++set(ENV{CXXFLAGS} " -D_POSIX_C_SOURCE -Wno-int-conversion")
+ vcpkg_configure_make(
+     SOURCE_PATH "${SOURCE_PATH}"
+     AUTOCONFIG
+@@ -50,6 +52,7 @@ vcpkg_configure_make(
+         --with-tpm=no
+         --with-tpm2=no
+         --with-zstd=no
++        --disable-hardware-acceleration
+         ${options}
+         YACC=false # false, the program - not used here
+     OPTIONS_DEBUG
