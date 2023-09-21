@@ -86,7 +86,7 @@ jobs:
           PATH=$PATH:${{ env.llvm_path }}/bin:${{ env.wxwidgets_path }}/bin
           export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig:${{ env.libfilezilla_path }}/lib/pkgconfig
           export CPPFLAGS="-I${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/include -I${{ env.libfilezilla_path }}/include"
-          export LDFLAGS="-Wl,--allow-multiple-definition -L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib -L${{ env.libfilezilla_path }}/lib"
+          export LDFLAGS="--static -Wl,--allow-multiple-definition -L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib -L${{ env.libfilezilla_path }}/lib"
           wget https://download.filezilla-project.org/client/FileZilla_${{ env.filezilla_version }}_src.tar.xz
           tar -xf FileZilla_${{ env.filezilla_version }}_src.tar.xz
           cd filezilla-${{ env.filezilla_version }}
@@ -109,9 +109,6 @@ jobs:
           export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig:${{ env.libfilezilla_path }}/lib/pkgconfig
           mkdir -p upload 
           cd filezilla-${{ env.filezilla_version }}/data
-          cp ${{ env.llvm_path }}/aarch64-w64-mingw32/bin/libwinpthread-1.dll dlls_gui/
-          cp ${{ env.llvm_path }}/aarch64-w64-mingw32/bin/libunwind.dll dlls_gui/
-          cp ${{ env.llvm_path }}/aarch64-w64-mingw32/bin/libc++.dll dlls_gui/
           sed -i '/fzshellext\/32/d' makezip.sh
           sed -i '/fzstorj/d' makezip.sh
           bash makezip.sh ${{ env.filezilla_path }}
