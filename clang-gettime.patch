@@ -1,0 +1,47 @@
+From 389729499043bb8b6ba19c0797e93cbdc17ed1a1 Mon Sep 17 00:00:00 2001
+From: Daiki Ueno <ueno@gnu.org>
+Date: Wed, 23 Aug 2023 10:43:54 +0900
+Subject: [PATCH] benchmark: use fallback gettime provided by Gnulib's timespec
+ module
+
+If CLOCK_PROCESS_CPUTIME_ID is not defined, a fallback gettime
+function was defined as an inline function.  Given that "timespec.h"
+from Gnulib already defines such a fallback function with the same
+name, it's not necessary to redefine it.  This should fix the build
+issue with Clang:
+
+  In file included from ../../gnutls-3.8.1/src/cli.c:65:
+  ../../gnutls-3.8.1/src/benchmark.h:38:20: error: static declaration of 'gettime' follows non-static declaration
+  inline static void gettime(struct timespec *ts)
+                     ^
+  ../../gnutls-3.8.1/src/gl/timespec.h:93:6: note: previous declaration is here
+  void gettime (struct timespec *) _GL_ARG_NONNULL ((1));
+       ^
+
+Signed-off-by: Daiki Ueno <ueno@gnu.org>
+---
+ src/benchmark.h | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/src/benchmark.h b/src/benchmark.h
+index 7b66751496..4aea206148 100644
+--- a/src/benchmark.h
++++ b/src/benchmark.h
+@@ -34,14 +34,6 @@
+ #if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_PROCESS_CPUTIME_ID)
+ #undef gettime
+ #define gettime(x) clock_gettime(CLOCK_PROCESS_CPUTIME_ID, x)
+-#else
+-inline static void gettime(struct timespec *ts)
+-{
+-	struct timeval tv;
+-	gettimeofday(&tv, NULL);
+-	ts->tv_sec = tv.tv_sec;
+-	ts->tv_nsec = tv.tv_usec * 1000;
+-}
+ #endif
+ 
+ typedef void (*sighandler_t)(int);
+-- 
+GitLab
+
