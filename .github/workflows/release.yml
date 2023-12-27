@@ -13,9 +13,9 @@ jobs:
       llvm_path: "${{ github.workspace }}/llvm-mingw"
       libfilezilla_version: "0.45.0"
       libfilezilla_path: "${{ github.workspace }}/libfilezilla-windows-arm64"
-      filezilla_version: "3.66.1"
+      filezilla_version: "3.66.4"
       filezilla_path: "${{ github.workspace }}/filezilla-windows-arm64"
-      wxwidgets_version: "3.2.3"
+      wxwidgets_version: "3.2.4"
       wxwidgets_path: "${{ github.workspace }}/wxmsw-windows-arm64"
       target: "aarch64-w64-mingw32"
     
