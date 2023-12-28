@@ -28,9 +28,10 @@ jobs:
           sudo apt update
           sudo apt install \
             build-essential git cmake ninja-build pkg-config p7zip libtool make colormake gettext automake autoconf autogen autopoint patch wx-common
-          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
-          tar -xf llvm-mingw-*.tar.xz
-          mv llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 llvm-mingw
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64.tar.xz
+          tar xf llvm-mingw-*.tar.xz
+          rm llvm-mingw-*.tar.xz
+          mv llvm-mingw-* llvm-mingw
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           ./bootstrap-vcpkg.sh
@@ -39,7 +40,8 @@ jobs:
         run: |
           PATH=$PATH:${{ env.llvm_path }}/bin
           cd vcpkg
-          git apply ${{ github.workspace }}/0001-fix-vcpkg-gnutls.patch
+          sed -i 's/PATCHES/PATCHES\nclang-gettime.patch/g' ports/libgnutls/portfile.cmake
+          sed -i 's/OPTIONS/OPTIONS\n--disable-hardware-acceleration/g' ports/libgnutls/portfile.cmake
           cp ${{ github.workspace }}/clang-gettime.patch ports/libgnutls
           # tell vcpkg to only build Release variants of the dependencies
           mkdir triplets_overlay
