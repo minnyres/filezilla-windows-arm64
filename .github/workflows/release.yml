@@ -93,7 +93,7 @@ jobs:
           cd filezilla-${{ env.filezilla_version }}
           patch -p1 < ${{ github.workspace }}/0002-Enable-shellext-build-on-clang-MinGW.patch
           patch -p1 < ${{ github.workspace }}/0003-Enable-shellext-on-Windows-ARM64.patch
-          export libclang_rt="${{ env.llvm_path }}/lib/clang/16/lib/windows/libclang_rt.builtins-aarch64.a"
+          export libclang_rt="${{ env.llvm_path }}/lib/clang/17/lib/windows/libclang_rt.builtins-aarch64.a"
           autoreconf -fi
           pushd src/fzshellext
           autoreconf -fi
