@@ -1,10 +1,7 @@
 name: Build for Windows ARM64
 
 on:
-  workflow_dispatch:
   push:
-    tags:
-    - '*'
 
 jobs:
   build-windows-arm64:
@@ -12,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       llvm_path: "${{ github.workspace }}/llvm-mingw"
-      libfilezilla_version: "0.46.0"
+      libfilezilla_version: "0.47.0"
       libfilezilla_path: "${{ github.workspace }}/libfilezilla-windows-arm64"
-      filezilla_version: "3.66.5"
+      filezilla_version: "3.67.0"
       filezilla_path: "${{ github.workspace }}/filezilla-windows-arm64"
       wxwidgets_version: "3.2.4"
       wxwidgets_path: "${{ github.workspace }}/wxmsw-windows-arm64"
