@@ -9,13 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       llvm_path: "${{ github.workspace }}/llvm-mingw"
-      libfilezilla_version: "0.47.0"
-      libfilezilla_path: "${{ github.workspace }}/libfilezilla-windows-arm64"
-      filezilla_version: "3.67.0"
-      filezilla_path: "${{ github.workspace }}/filezilla-windows-arm64"
-      wxwidgets_version: "3.2.4"
-      wxwidgets_path: "${{ github.workspace }}/wxmsw-windows-arm64"
-      target: "aarch64-w64-mingw32"
     
     steps:
       - name: Checkout repository
@@ -25,9 +18,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install \
-            build-essential git cmake ninja-build pkg-config p7zip libtool make colormake gettext automake autoconf autogen autopoint patch wx-common
+            gcc git cmake ninja-build pkg-config p7zip libtool make colormake gettext automake autoconf autogen autopoint patch wx-common
           wget https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64.tar.xz
-          tar xf llvm-mingw-*.tar.xz
+          tar -xf llvm-mingw-*.tar.xz
           rm llvm-mingw-*.tar.xz
           mv llvm-mingw-* llvm-mingw
           git clone https://github.com/microsoft/vcpkg.git
@@ -36,13 +29,16 @@ jobs:
           
       - name: Install libraries from vcpkg
         run: |
-          PATH=$PATH:${{ env.llvm_path }}/bin
+          export PATH=${{ env.llvm_path }}/bin:$PATH
           cd vcpkg
           sed -i 's/OPTIONS/OPTIONS\n--disable-hardware-acceleration/g' ports/libgnutls/portfile.cmake
+          git apply ${{ github.workspace }}/patches/vcpkg-disable-asm-for-arm32.patch
           # tell vcpkg to only build Release variants of the dependencies
           mkdir triplets_overlay
           cp triplets/community/arm64-mingw-static.cmake triplets_overlay/arm64-mingw-static-release.cmake
+          cp triplets/community/arm-mingw-static.cmake triplets_overlay/arm-mingw-static-release.cmake
           echo "set(VCPKG_BUILD_TYPE release)" >> triplets_overlay/arm64-mingw-static-release.cmake
+          echo "set(VCPKG_BUILD_TYPE release)" >> triplets_overlay/arm-mingw-static-release.cmake
           # clear buildtrees after each package installation to reduce disk space requirements
           packages="libgnutls sqlite3"
           ./vcpkg upgrade \
@@ -53,72 +49,28 @@ jobs:
             --clean-after-build \
             --triplet=arm64-mingw-static-release \
             $packages
+          ./vcpkg install \
+            --overlay-triplets=triplets_overlay \
+            --clean-after-build \
+            --triplet=arm-mingw-static-release \
+            $packages
           cd ${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib
           ln -s libzlib.a libz.a
-
-      - name: Build wxwidgets
-        run: |
-          PATH=$PATH:${{ env.llvm_path }}/bin
-          export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig
-          export CPPFLAGS="-I${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/include"
-          export LDFLAGS="-L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib"
-          wget https://github.com/wxWidgets/wxWidgets/releases/download/v${{ env.wxwidgets_version }}/wxWidgets-${{ env.wxwidgets_version }}.tar.bz2
-          tar -xf wxWidgets-${{ env.wxwidgets_version }}.tar.bz2
-          cd wxWidgets-${{ env.wxwidgets_version }}
-          ./configure --host=${{ env.target }} --prefix=${{ env.wxwidgets_path }} --with-zlib=sys  --with-msw --with-libiconv-prefix=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release --disable-shared --disable-debug_flag --enable-optimise --enable-unicode
-          make -j 4 && make install
-
-      - name: Build libfilezilla
-        run: |
-          PATH=$PATH:${{ env.llvm_path }}/bin
-          export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig
-          export CPPFLAGS="-I${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/include"
-          export LDFLAGS="-L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib"
-          wget https://download.filezilla-project.org/libfilezilla/libfilezilla-${{ env.libfilezilla_version }}.tar.xz
-          tar -xf libfilezilla-${{ env.libfilezilla_version }}.tar.xz
-          cd libfilezilla-${{ env.libfilezilla_version }}
-          ./configure --host=${{ env.target }} --prefix=${{ env.libfilezilla_path }} --disable-shared --enable-static 
-          make -j 4 && make install
+          cd ${{ github.workspace }}/vcpkg/installed/arm-mingw-static-release/lib
+          ln -s libzlib.a libz.a
 
       - name: Build filezilla
         run: |
-          PATH=$PATH:${{ env.llvm_path }}/bin:${{ env.wxwidgets_path }}/bin
-          export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig:${{ env.libfilezilla_path }}/lib/pkgconfig
-          export CPPFLAGS="-I${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/include -I${{ env.libfilezilla_path }}/include"
-          export LDFLAGS="--static -Wl,--allow-multiple-definition -L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib -L${{ env.libfilezilla_path }}/lib"
-          wget https://download.filezilla-project.org/client/FileZilla_${{ env.filezilla_version }}_src.tar.xz
-          tar -xf FileZilla_${{ env.filezilla_version }}_src.tar.xz
-          cd filezilla-${{ env.filezilla_version }}
-          patch -p1 < ${{ github.workspace }}/0002-Enable-shellext-build-on-clang-MinGW.patch
-          patch -p1 < ${{ github.workspace }}/0003-Enable-shellext-on-Windows-ARM64.patch
-          export libclang_rt="${{ env.llvm_path }}/lib/clang/17/lib/windows/libclang_rt.builtins-aarch64.a"
-          autoreconf -fi
-          pushd src/fzshellext
-          autoreconf -fi
-          popd
-          ./configure --build=x86_64-linux-gnu --host=${{ env.target }} --prefix=${{ env.filezilla_path }} --disable-shared --enable-static  --with-pugixml=builtin --disable-storj --with-wx-config=${{ env.wxwidgets_path }}/bin/wx-config
-          make -j 4 
-          find . -name "*.exe" -exec ${{ env.target }}-strip {} \;
-          find . -name "*.dll" -exec ${{ env.target }}-strip {} \;
-          make install
+          chmod 755 build.sh
+          ./build.sh arm64
+          ./build.sh arm32 
 
-      - name: Prepare build artifacts
-        run: |
-          PATH=$PATH:${{ env.llvm_path }}/bin:${{ env.wxwidgets_path }}/bin
-          export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig:${{ env.libfilezilla_path }}/lib/pkgconfig
-          mkdir -p upload 
-          cd filezilla-${{ env.filezilla_version }}/data
-          sed -i '/fzshellext\/32/d' makezip.sh
-          sed -i '/fzstorj/d' makezip.sh
-          bash makezip.sh ${{ env.filezilla_path }}
-          cp FileZilla.zip ${{ github.workspace }}/upload
-          cp FileZilla.zip ${{ github.workspace }}/filezilla_${{ env.filezilla_version }}_arm64.zip
-          
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: filezilla_${{ env.filezilla_version }}_arm64
-          path: upload
+          name: filezilla_server_${{ env.filezilla_server_version }}_arm64
+          path: |
+            ./filezilla_*.zip
 
       - name: Batch release
         uses: softprops/action-gh-release@v1
@@ -126,4 +78,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: filezilla_${{ env.filezilla_version }}_arm64.zip  
+          files: |
+            ./filezilla_*.zip
