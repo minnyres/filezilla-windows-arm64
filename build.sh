@@ -62,17 +62,18 @@ gnumakeplusinstall
 popd
 
 # Build libfilezilla
-$wget https://download.filezilla-project.org/libfilezilla/libfilezilla-${libfilezilla_version}.tar.xz
-tar xf libfilezilla-${libfilezilla_version}.tar.xz
+# $wget https://download.filezilla-project.org/libfilezilla/libfilezilla-${libfilezilla_version}.tar.xz
+svn co https://svn.filezilla-project.org/svn/libfilezilla/trunk@11169 libfilezilla-${libfilezilla_version}
 pushd libfilezilla-${libfilezilla_version}
+autoreconf -fi
 ./configure --host=$TARGET --prefix=${libfilezilla_path} --disable-shared --enable-static 
 gnumakeplusinstall
 popd
 rm -rf libfilezilla-${libfilezilla_version}
 
 # Build filezilla
-$wget https://download.filezilla-project.org/client/FileZilla_${filezilla_version}_src.tar.xz
-tar -xf FileZilla_${filezilla_version}_src.tar.xz
+# $wget https://download.filezilla-project.org/client/FileZilla_${filezilla_version}_src.tar.xz
+svn co https://svn.filezilla-project.org/svn/FileZilla3/trunk@11172 filezilla-${filezilla_version}
 pushd filezilla-${filezilla_version}
 patch -p1 < ../patches/0002-Enable-shellext-build-on-clang-MinGW.patch
 patch -p1 < ../patches/$shellext_patch
