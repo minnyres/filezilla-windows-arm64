@@ -28,11 +28,11 @@ else
     exit -1
 fi
 
-libfilezilla_version=0.48.1
+# libfilezilla_version=0.49.1
 libfilezilla_path=$PWD/libfilezilla-windows-$arch
-filezilla_version=3.67.1
+filezilla_version=3.68.1
 filezilla_path=$PWD/filezilla-windows-$arch
-wxwidgets_version=3.2.5
+wxwidgets_version=3.2.6
 wxwidgets_path=$PWD/wxmsw-windows-$arch
 
 export PATH=$llvm_dir/bin:$wxwidgets_path/bin:$PATH
@@ -52,9 +52,9 @@ function gnumakeplusinstall {
 # Build wxwidgets
 [ -d wxWidgets ] || $gitclone --branch v$wxwidgets_version --recurse-submodules --depth 1 https://github.com/wxWidgets/wxWidgets.git
 pushd wxWidgets
-if [ $arch == "arm32" ]; then   
-    git apply ../patches/wx-fix-arm32-support.patch
-fi
+# if [ $arch == "arm32" ]; then   
+#     git apply ../patches/wx-fix-arm32-support.patch
+# fi
 mkdir build-$TARGET
 cd build-$TARGET
 ../configure --host=$TARGET --prefix=${wxwidgets_path} --with-zlib=sys --with-msw --with-libiconv-prefix=$vcpkg_dir --disable-shared --disable-debug_flag --enable-optimise --enable-unicode
@@ -63,7 +63,7 @@ popd
 
 # Build libfilezilla
 # $wget https://download.filezilla-project.org/libfilezilla/libfilezilla-${libfilezilla_version}.tar.xz
-svn co https://svn.filezilla-project.org/svn/libfilezilla/trunk@11169 libfilezilla-${libfilezilla_version}
+svn co https://svn.filezilla-project.org/svn/libfilezilla/trunk@11192 libfilezilla-${libfilezilla_version}
 pushd libfilezilla-${libfilezilla_version}
 autoreconf -fi
 ./configure --host=$TARGET --prefix=${libfilezilla_path} --disable-shared --enable-static 
@@ -73,7 +73,7 @@ rm -rf libfilezilla-${libfilezilla_version}
 
 # Build filezilla
 # $wget https://download.filezilla-project.org/client/FileZilla_${filezilla_version}_src.tar.xz
-svn co https://svn.filezilla-project.org/svn/FileZilla3/trunk@11172 filezilla-${filezilla_version}
+svn co https://svn.filezilla-project.org/svn/FileZilla3/trunk@11205 filezilla-${filezilla_version}
 pushd filezilla-${filezilla_version}
 patch -p1 < ../patches/0002-Enable-shellext-build-on-clang-MinGW.patch
 patch -p1 < ../patches/$shellext_patch

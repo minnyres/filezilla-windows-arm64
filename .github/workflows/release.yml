@@ -49,21 +49,20 @@ jobs:
             --clean-after-build \
             --triplet=arm64-mingw-static-release \
             $packages
-          ./vcpkg install \
-            --overlay-triplets=triplets_overlay \
-            --clean-after-build \
-            --triplet=arm-mingw-static-release \
-            $packages
+          #./vcpkg install \
+          #  --overlay-triplets=triplets_overlay \
+          #  --clean-after-build \
+          #  --triplet=arm-mingw-static-release \
+          #  $packages
           cd ${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib
           ln -s libzlib.a libz.a
-          cd ${{ github.workspace }}/vcpkg/installed/arm-mingw-static-release/lib
-          ln -s libzlib.a libz.a
+          # cd ${{ github.workspace }}/vcpkg/installed/arm-mingw-static-release/lib
+          # ln -s libzlib.a libz.a
 
       - name: Build filezilla
         run: |
           chmod 755 build.sh
           ./build.sh arm64
-          ./build.sh arm32 
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
