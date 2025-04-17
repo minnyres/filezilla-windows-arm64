@@ -23,14 +23,18 @@ jobs:
           tar -xf llvm-mingw-*.tar.xz
           rm llvm-mingw-*.tar.xz
           mv llvm-mingw-* llvm-mingw
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
+
+      - name: Setup a new (or from cache) vcpkg (and does not build any package)
+        uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
+                                  # action you need, `v11` in this case to stay up
+                                  # to date with fixes on the v11 branch
+        with:
+          vcpkgGitCommitId: 'ce613c41372b23b1f51333815feb3edd87ef8a8b'
           
       - name: Install libraries from vcpkg
         run: |
           export PATH=${{ env.llvm_path }}/bin:$PATH
-          cd vcpkg
+          cd ${{ env.RUNVCPKG_VCPKG_ROOT }}
           sed -i 's/OPTIONS/OPTIONS\n--disable-hardware-acceleration/g' ports/libgnutls/portfile.cmake
           git apply ${{ github.workspace }}/patches/vcpkg-disable-asm-for-arm32.patch
           # tell vcpkg to only build Release variants of the dependencies
@@ -49,15 +53,13 @@ jobs:
             --clean-after-build \
             --triplet=arm64-mingw-static-release \
             $packages
-          #./vcpkg install \
-          #  --overlay-triplets=triplets_overlay \
-          #  --clean-after-build \
-          #  --triplet=arm-mingw-static-release \
-          #  $packages
+          ./vcpkg install \
+            --overlay-triplets=triplets_overlay \
+            --clean-after-build \
+            --triplet=arm-mingw-static-release \
+            $packages
           cd ${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib
           ln -s libzlib.a libz.a
-          # cd ${{ github.workspace }}/vcpkg/installed/arm-mingw-static-release/lib
-          # ln -s libzlib.a libz.a
 
       - name: Build filezilla
         run: |
@@ -65,14 +67,14 @@ jobs:
           ./build.sh arm64
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: filezilla_server_${{ env.filezilla_server_version }}_arm64
           path: |
             ./filezilla_*.zip
 
       - name: Batch release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

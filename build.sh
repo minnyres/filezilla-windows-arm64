@@ -28,11 +28,11 @@ else
     exit -1
 fi
 
-# libfilezilla_version=0.49.1
+libfilezilla_version=0.50.0
 libfilezilla_path=$PWD/libfilezilla-windows-$arch
-filezilla_version=3.68.1
+filezilla_version=3.69.0
 filezilla_path=$PWD/filezilla-windows-$arch
-wxwidgets_version=3.2.6
+wxwidgets_version=3.2.7
 wxwidgets_path=$PWD/wxmsw-windows-$arch
 
 export PATH=$llvm_dir/bin:$wxwidgets_path/bin:$PATH
@@ -62,8 +62,8 @@ gnumakeplusinstall
 popd
 
 # Build libfilezilla
-# $wget https://download.filezilla-project.org/libfilezilla/libfilezilla-${libfilezilla_version}.tar.xz
-svn co https://svn.filezilla-project.org/svn/libfilezilla/trunk@11192 libfilezilla-${libfilezilla_version}
+$wget https://sources.archlinux.org/other/libfilezilla/libfilezilla-${libfilezilla_version}.tar.xz
+tar xf libfilezilla-${libfilezilla_version}.tar.xz
 pushd libfilezilla-${libfilezilla_version}
 autoreconf -fi
 ./configure --host=$TARGET --prefix=${libfilezilla_path} --disable-shared --enable-static 
@@ -72,8 +72,8 @@ popd
 rm -rf libfilezilla-${libfilezilla_version}
 
 # Build filezilla
-# $wget https://download.filezilla-project.org/client/FileZilla_${filezilla_version}_src.tar.xz
-svn co https://svn.filezilla-project.org/svn/FileZilla3/trunk@11205 filezilla-${filezilla_version}
+$wget https://sources.archlinux.org/other/filezilla/filezilla-${filezilla_version}.tar.xz
+tar xf filezilla-${filezilla_version}.tar.xz
 pushd filezilla-${filezilla_version}
 patch -p1 < ../patches/0002-Enable-shellext-build-on-clang-MinGW.patch
 patch -p1 < ../patches/$shellext_patch
