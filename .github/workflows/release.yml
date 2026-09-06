@@ -17,9 +17,10 @@ jobs:
       - name: Install tools
         run: |
           sudo apt update
-          sudo apt install \
-            gcc git cmake ninja-build pkg-config p7zip libtool make colormake gettext automake autoconf autogen autopoint patch wx-common
-          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64.tar.xz
+          sudo apt install -y \
+            gcc git cmake ninja-build pkg-config p7zip libtool make colormake gettext automake autoconf autogen autopoint patch meson ninja-build autoconf-archive
+          sudo sed -i 's#-L\* | -R\* | -l\*#-L\* | -R\* | -l\* | */libclang_rt.*.a#g' /usr/share/aclocal/libtool.m4
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20260616/llvm-mingw-20260616-ucrt-ubuntu-22.04-x86_64.tar.xz
           tar -xf llvm-mingw-*.tar.xz
           rm llvm-mingw-*.tar.xz
           mv llvm-mingw-* llvm-mingw
@@ -29,37 +30,28 @@ jobs:
                                   # action you need, `v11` in this case to stay up
                                   # to date with fixes on the v11 branch
         with:
-          vcpkgGitCommitId: 'dd3097e305afa53f7b4312371f62058d2e665320'
+          vcpkgGitCommitId: '9e593bb18ea69cc5095e012465dcd675a822ed0d'
           
       - name: Install libraries from vcpkg
         run: |
           export PATH=${{ env.llvm_path }}/bin:$PATH
           cd ${{ env.RUNVCPKG_VCPKG_ROOT }}
           sed -i 's/OPTIONS/OPTIONS\n--disable-hardware-acceleration/g' ports/libgnutls/portfile.cmake
-          git apply ${{ github.workspace }}/patches/vcpkg-disable-asm-for-arm32.patch
           # tell vcpkg to only build Release variants of the dependencies
           mkdir triplets_overlay
-          cp triplets/community/arm64-mingw-static.cmake triplets_overlay/arm64-mingw-static-release.cmake
-          cp triplets/community/arm-mingw-static.cmake triplets_overlay/arm-mingw-static-release.cmake
-          echo "set(VCPKG_BUILD_TYPE release)" >> triplets_overlay/arm64-mingw-static-release.cmake
-          echo "set(VCPKG_BUILD_TYPE release)" >> triplets_overlay/arm-mingw-static-release.cmake
+          cp triplets/community/arm64-mingw-dynamic.cmake triplets_overlay/arm64-mingw-dynamic-release.cmake
+          echo "set(VCPKG_BUILD_TYPE release)" >> triplets_overlay/arm64-mingw-dynamic-release.cmake
           # clear buildtrees after each package installation to reduce disk space requirements
-          packages="libgnutls sqlite3"
+          packages="sqlite3 argon2 zlib"
           ./vcpkg upgrade \
             --overlay-triplets=triplets_overlay \
             --no-dry-run
           ./vcpkg install \
             --overlay-triplets=triplets_overlay \
             --clean-after-build \
-            --triplet=arm64-mingw-static-release \
+            --triplet=arm64-mingw-dynamic-release \
             $packages
-          ./vcpkg install \
-            --overlay-triplets=triplets_overlay \
-            --clean-after-build \
-            --triplet=arm-mingw-static-release \
-            $packages
-          cd ${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib
-          ln -s libzlib.a libz.a
+          cd ${{ github.workspace }}/vcpkg/installed/arm64-mingw-dynamic-release/lib
 
       - name: Build filezilla
         run: |
@@ -71,7 +63,7 @@ jobs:
         with:
           name: filezilla_arm64
           path: |
-            ./filezilla_*.zip
+            ./FileZilla*.zip
 
       - name: Batch release
         uses: softprops/action-gh-release@v2
@@ -80,4 +72,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            ./filezilla_*.zip
+            ./FileZilla*.zip
